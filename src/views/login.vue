@@ -49,7 +49,7 @@ async function onSubmit() {
     type: "positive",
     message: `登录成功！欢迎 ${userData.userName[0] + '*'.repeat(userData.userName.length - 1)}`,
   });
-  // $router.push({ name: "display" });
+  $router.push({ name: "display" });
 }
 </script>
 

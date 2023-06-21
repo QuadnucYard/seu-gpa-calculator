@@ -4,13 +4,19 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/",
     component: () => import("@/views/index.vue"),
-    meta: { keepalive: false, requireAuth: true },
+    meta: { keepalive: false },
   },
   {
     path: "/auth/login",
     name: "login",
     component: () => import("@/views/login.vue"),
     meta: { keepalive: false },
+  },
+  {
+    path: "/display",
+    name: "display",
+    component: () => import("@/views/display.vue"),
+    meta: { keepalive: false, requireAuth: true },
   },
 ];
 

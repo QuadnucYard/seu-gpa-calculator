@@ -9,7 +9,7 @@ import { getToken } from "@/utils/auth";
 const service = axios.create({
   // baseURL: import.meta.env.VITE_APP_BASE_API + "/api",
   baseURL: "/api",
-  timeout: 10000, // 请求超时时间
+  timeout: 30000, // 请求超时时间
   withCredentials: true,
   // headers: { "Access-Control-Allow-Origin": "*" },
 });

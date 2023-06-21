@@ -1,4 +1,4 @@
-import axios from "@/api/request";
+import axios from "./request";
 
 export async function visit(
   username: string
