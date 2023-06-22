@@ -19,16 +19,8 @@
     "allowJs": false,
     "declaration": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["vue-cesium/global", "vue-cesium/Cesium"]
+    "types": []
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.d.ts",
-    "src/**/*.tsx",
-    "src/**/*.vue",
-    "src/**/*.js",
-    "node_modules/vue-cesium/Cesium.d.ts",
-    "node_modules/vue-cesium/global.d.ts"
-  ],
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.js"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

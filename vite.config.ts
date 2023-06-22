@@ -1,18 +1,19 @@
 import path from "path";
-import { defineConfig, loadEnv } from "vite";
-import vue from "@vitejs/plugin-vue";
-import Icons from "unplugin-icons/vite";
-import IconsResolver from "unplugin-icons/resolver";
-import AutoImport from "unplugin-auto-import/vite";
 
-import Components from "unplugin-vue-components/vite";
-import { QuasarResolver } from "unplugin-vue-components/resolvers";
 import { quasar, transformAssetUrls } from "@quasar/vite-plugin";
+import vue from "@vitejs/plugin-vue";
+import AutoImport from "unplugin-auto-import/vite";
+import IconsResolver from "unplugin-icons/resolver";
+import Icons from "unplugin-icons/vite";
+import { QuasarResolver } from "unplugin-vue-components/resolvers";
+import Components from "unplugin-vue-components/vite";
+import { defineConfig, loadEnv, ConfigEnv } from "vite";
+import viteCompression from "vite-plugin-compression";
 
 const pathSrc = path.resolve(__dirname, "src");
 
 // https://vitejs.dev/config/
-export default ({ mode }) =>
+export default ({ mode }: ConfigEnv) =>
   defineConfig({
     base: "./", // 解决dist资源路径问题
     resolve: {
@@ -28,9 +29,8 @@ export default ({ mode }) =>
       },
     },
     plugins: [
-      vue({
-        template: { transformAssetUrls },
-      }),
+      viteCompression(),
+      vue({ template: { transformAssetUrls } }),
       quasar({
         // sassVariables: 'src/quasar-variables.sass'
       }),
@@ -62,9 +62,7 @@ export default ({ mode }) =>
         dts: "src/components.d.ts",
       }),
 
-      Icons({
-        autoInstall: true,
-      }),
+      Icons({ autoInstall: true }),
 
       //Inspect(),
     ],
