@@ -14,9 +14,17 @@
         :visible-columns="visibleColumns"
         table-style="height: 100%;"
         class="sticky-table"
+        ref="tableRef"
+        @selection="handleSelection"
       >
         <template v-slot:top>
-          <div class="q-table__title">成绩查询</div>
+          <div>
+            <div class="q-table__title">
+              成绩查询
+              <q-btn round icon="logout" size="sm" title="注销" @click="handleLogout" />
+            </div>
+            <div v-if="user">欢迎 {{ user.userName }}({{ user.userDepartment }})</div>
+          </div>
           <q-space />
           <q-select
             v-model="visibleColumns"
@@ -35,47 +43,64 @@
         </template>
         <template v-slot:body-cell-KCXZDM="props">
           <q-td :props="props">
-            <q-badge :color="['blue-grey', 'primary', 'secondary', 'info'][Number(props.row.KCXZDM)]"  :label="props.value" />
+            <q-badge
+              :color="['blue-grey', 'primary', 'secondary', 'info'][Number(props.row.KCXZDM)]"
+              :label="props.value"
+            />
           </q-td>
         </template>
         <template v-slot:body-cell-XFJD48="props">
           <q-td :props="props">
-            <q-badge :color="props.row.JD_color48"  :label="props.value" />
+            <q-badge :color="props.row.JD_color48" :label="props.value" />
           </q-td>
         </template>
-        <!-- <template v-slot:body-cell-JDF48="props">
+        <template v-slot:body-cell-JDF48="props">
           <q-td :props="props">
-            <q-badge :color="props.row.JD_color48"  :label="props.value" />
+            <q-badge :color="props.row.JD_color48" :label="props.value" />
           </q-td>
-        </template> -->
+        </template>
         <template v-slot:body-cell-XFJD40="props">
           <q-td :props="props">
             <q-badge :color="props.row.JD_color40" :label="props.value" />
           </q-td>
         </template>
-        <!-- <template v-slot:body-cell-JDF40="props">
+        <template v-slot:body-cell-JDF40="props">
           <q-td :props="props">
-            <q-badge :color="props.row.JD_color40"  :label="props.value" />
+            <q-badge :color="props.row.JD_color40" :label="props.value" />
           </q-td>
-        </template> -->
+        </template>
         <template v-slot:bottom>
-          <q-chip square :clickable="false">
-            <q-avatar color="red" text-color="white" style="width: 60px">总学分</q-avatar>
-            {{ gpa.sumCredit }}
-          </q-chip>
-          <q-chip square :clickable="false">
-            <q-avatar color="pink" text-color="white" style="width: 60px">平均分</q-avatar>
-            {{ gpa.avgScore }}
-          </q-chip>
-          <q-chip square :clickable="false">
-            <q-avatar color="orange" text-color="white" style="width: 70px">GPA(4.8)</q-avatar>
-            {{ gpa.GPA48 }} × {{ gpa.sumGP48 }} ＝ {{ round4(gpa.GPA48 * gpa.sumGP48) }}
-          </q-chip>
-          <q-chip square :clickable="false">
-            <q-avatar color="deep-orange" text-color="white" style="width: 70px">GPA(4.0)</q-avatar>
-            {{ gpa.GPA40 }} × {{ gpa.sumGP40 }} ＝ {{ round4(gpa.GPA40 * gpa.sumGP40) }}
-          </q-chip>
-          <span class="text-grey">Tip: 可手动选择参与计算的课程！</span>
+          <div>
+            <q-chip square :clickable="false">
+              <q-avatar color="amber" text-color="white" style="width: 60px">已选课程</q-avatar>
+              {{ gpa.total }}
+            </q-chip>
+            <q-chip square :clickable="false">
+              <q-avatar color="red" text-color="white" style="width: 60px">总学分</q-avatar>
+              {{ gpa.sumCredit }}
+            </q-chip>
+            <q-chip square :clickable="false">
+              <q-avatar color="pink" text-color="white" style="width: 60px">平均分</q-avatar>
+              {{ gpa.avgScore }}
+            </q-chip>
+            <q-chip square :clickable="false">
+              <q-avatar color="orange" text-color="white" style="width: 70px">GPA(4.8)</q-avatar>
+              {{ gpa.GPA48 }}
+            </q-chip>
+            <q-chip square :clickable="false">
+              <q-avatar color="deep-orange" text-color="white" style="width: 70px"
+                >GPA(4.0)</q-avatar
+              >
+              {{ gpa.GPA40 }}
+            </q-chip>
+          </div>
+          <div>
+            <div class="text-grey">Tip: 可手动选择参与计算的课程！</div>
+            <div class="text-grey">
+              Use <kbd>SHIFT</kbd> to select / deselect a range and <kbd>CTRL</kbd> to add to
+              selection
+            </div>
+          </div>
         </template>
       </q-table>
     </div>
@@ -83,11 +108,20 @@
 </template>
 
 <script setup lang="ts">
+import { getUser, logout } from "@/api/login";
 import { query } from "@/api/query";
 import { calcGPA } from "@/utils/gpa";
 import { findGrade48, findGrade40, round3, round4 } from "@/utils/gpa";
+import { QTable } from "quasar";
+
+const $router = useRouter();
+const $store = useStore();
+const $q = useQuasar();
+
+const tableRef = ref<QTable>();
 
 const loading = ref(true);
+const user = ref<any>(undefined);
 const tableRows = ref<any[]>([]);
 const tableColumns = ref<any>([]);
 const selected = ref<any[]>([]);
@@ -107,6 +141,14 @@ const pagination = ref({
 
 const init = async () => {
   console.log("mounted");
+
+  user.value = await getUser();
+  if (!user.value) {
+    $q.notify({ type: "warning", message: "当前未登录！" });
+    $router.push({ name: "login" });
+    return;
+  }
+
   const { model, data } = await query();
   console.log(model, data);
   tableRows.value = data.map((r: any) => {
@@ -134,9 +176,9 @@ const init = async () => {
     )
     .concat([
       { name: "XFJD48", caption: "(4.8)", required: true },
-      // { name: "JDF48", caption: "(4.8)", required: true },
+      { name: "JDF48", caption: "(4.8)*", required: false },
       { name: "XFJD40", caption: "(4.0)", required: true },
-      // { name: "JDF40", caption: "(4.0)", required: true },
+      { name: "JDF40", caption: "(4.0)*", required: false },
     ])
     .map((t: any) => ({
       name: t.name,
@@ -147,22 +189,81 @@ const init = async () => {
       required: t.required ?? false,
     }));
   visibleColumns.value = model
-    .filter((t: any) => !t.hidden && t.caption != "替代课程" && t.caption != "替代课程号")
+    .filter(
+      (t: any) =>
+        !t.hidden &&
+        t.caption != "替代课程" &&
+        t.caption != "替代课程号" &&
+        t.name != "JDF48" &&
+        t.name != "JDF40"
+    )
     .map((t: any) => t.name);
   console.log(tableRows.value, tableColumns.value, visibleColumns.value);
   selected.value = tableRows.value.filter(
     t => t.CXCKDM_DISPLAY == "首修" && (t.KCXZDM_DISPLAY == "必修" || t.KCXZDM_DISPLAY == "限选")
   );
   loading.value = false;
+
+  console.log($store.state.user);
 };
 onMounted(init);
 
 const gpa = computed(() => calcGPA(selected.value));
+
+const handleLogout = async () => {
+  $q.notify({ type: "info", message: "退出登录状态" });
+  await logout();
+  $router.push({ name: "index" });
+};
+
+let storedSelectedRow: any;
+function handleSelection({ rows, added, evt }: { rows: readonly any[]; added: boolean; evt: Event;}) {
+  // ignore selection change from header of not from a direct click event
+  if (rows.length !== 1 || evt === void 0) {
+    return;
+  }
+
+  const oldSelectedRow = storedSelectedRow;
+  const [newSelectedRow] = rows;
+  const { ctrlKey, shiftKey } = evt;
+
+  if (shiftKey !== true) {
+    storedSelectedRow = newSelectedRow;
+  }
+
+  // wait for the default selection to be performed
+  nextTick(() => {
+    if (shiftKey === true) {
+      const tableRows = tableRef.value!.filteredSortedRows;
+      let firstIndex = tableRows.indexOf(oldSelectedRow);
+      let lastIndex = tableRows.indexOf(newSelectedRow);
+
+      if (firstIndex < 0) {
+        firstIndex = 0;
+      }
+
+      if (firstIndex > lastIndex) {
+        [firstIndex, lastIndex] = [lastIndex, firstIndex];
+      }
+
+      const rangeRows = tableRows.slice(firstIndex, lastIndex + 1);
+      // we need the original row object so we can match them against the rows in range
+      const selectedRows = selected.value.map(toRaw);
+
+      selected.value =
+        added === true
+          ? selectedRows.concat(rangeRows.filter(row => selectedRows.includes(row) === false))
+          : selectedRows.filter(row => rangeRows.includes(row) === false);
+    } else if (ctrlKey !== true && added === true) {
+      selected.value = [newSelectedRow];
+    }
+  });
+}
 </script>
 
 <style scoped lang="scss">
 .sticky-table {
-  max-height: 600px;
+  max-height: calc(100vh - 40px);
 
   tr th {
     position: sticky;
