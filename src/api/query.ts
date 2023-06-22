@@ -1,5 +1,7 @@
 import axios from "./request";
 
-export async function query(): Promise<any> {
+type AnyObject = { [key: string]: any };
+
+export async function query(): Promise<{ data: AnyObject[]; model: AnyObject[] }> {
   return (await axios.get("/query")).data;
 }
