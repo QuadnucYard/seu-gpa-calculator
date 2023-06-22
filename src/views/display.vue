@@ -1,5 +1,5 @@
 <template>
-  <div style="height:100vh;">
+  <div style="height: 100vh">
     <div class="q-pa-md">
       <q-table
         title="成绩查询"
@@ -8,11 +8,11 @@
         :columns="tableColumns"
         row-key="WID"
         selection="multiple"
-        :pagination="{rowsPerPage: 1000}"
+        :pagination="{ rowsPerPage: 1000 }"
         :loading="loading"
         v-model:selected="selected"
         :visible-columns="visibleColumns"
-        table-style="height: 80vh;"
+        table-style="height: 100%;"
         class="sticky-table"
       >
         <template v-slot:top>
@@ -33,23 +33,49 @@
             style="min-width: 150px"
           />
         </template>
+        <template v-slot:body-cell-KCXZDM="props">
+          <q-td :props="props">
+            <q-badge :color="['blue-grey', 'primary', 'secondary', 'info'][Number(props.row.KCXZDM)]"  :label="props.value" />
+          </q-td>
+        </template>
+        <template v-slot:body-cell-XFJD48="props">
+          <q-td :props="props">
+            <q-badge :color="props.row.JD_color48"  :label="props.value" />
+          </q-td>
+        </template>
+        <!-- <template v-slot:body-cell-JDF48="props">
+          <q-td :props="props">
+            <q-badge :color="props.row.JD_color48"  :label="props.value" />
+          </q-td>
+        </template> -->
+        <template v-slot:body-cell-XFJD40="props">
+          <q-td :props="props">
+            <q-badge :color="props.row.JD_color40" :label="props.value" />
+          </q-td>
+        </template>
+        <!-- <template v-slot:body-cell-JDF40="props">
+          <q-td :props="props">
+            <q-badge :color="props.row.JD_color40"  :label="props.value" />
+          </q-td>
+        </template> -->
         <template v-slot:bottom>
           <q-chip square :clickable="false">
             <q-avatar color="red" text-color="white" style="width: 60px">总学分</q-avatar>
             {{ gpa.sumCredit }}
           </q-chip>
           <q-chip square :clickable="false">
-            <q-avatar color="red" text-color="white" style="width: 60px">平均分</q-avatar>
+            <q-avatar color="pink" text-color="white" style="width: 60px">平均分</q-avatar>
             {{ gpa.avgScore }}
           </q-chip>
           <q-chip square :clickable="false">
-            <q-avatar color="red" text-color="white" style="width: 70px">GPA(4.8)</q-avatar>
+            <q-avatar color="orange" text-color="white" style="width: 70px">GPA(4.8)</q-avatar>
             {{ gpa.GPA48 }} × {{ gpa.sumGP48 }} ＝ {{ round4(gpa.GPA48 * gpa.sumGP48) }}
           </q-chip>
           <q-chip square :clickable="false">
-            <q-avatar color="red" text-color="white" style="width: 70px">GPA(4.0)</q-avatar>
+            <q-avatar color="deep-orange" text-color="white" style="width: 70px">GPA(4.0)</q-avatar>
             {{ gpa.GPA40 }} × {{ gpa.sumGP40 }} ＝ {{ round4(gpa.GPA40 * gpa.sumGP40) }}
           </q-chip>
+          <span class="text-grey">Tip: 可手动选择参与计算的课程！</span>
         </template>
       </q-table>
     </div>
@@ -59,7 +85,7 @@
 <script setup lang="ts">
 import { query } from "@/api/query";
 import { calcGPA } from "@/utils/gpa";
-import { calcGP48, calcGP40, round3,round4  } from "@/utils/gpa";
+import { findGrade48, findGrade40, round3, round4 } from "@/utils/gpa";
 
 const loading = ref(true);
 const tableRows = ref<any[]>([]);
@@ -84,13 +110,17 @@ const init = async () => {
   const { model, data } = await query();
   console.log(model, data);
   tableRows.value = data.map((r: any) => {
-    const gp48 = calcGP48(r.ZCJ);
-    const gp40 = calcGP40(r.ZCJ);
+    const ZCJ = Number(r.ZCJ);
+    const gp48 = findGrade48(ZCJ);
+    const gp40 = findGrade40(ZCJ);
     return Object.assign(r, {
-      XFJD48: gp48,
-      JDF48: round3(gp48 * r.XF),
-      XFJD40: gp40,
-      JDF40: gp40 * r.XF,
+      ZCJ,
+      XFJD48: gp48.point,
+      JDF48: round3(gp48.point * r.XF),
+      XFJD40: gp40.point,
+      JDF40: gp40.point * r.XF,
+      JD_color48: gp48.color,
+      JD_color40: gp40.color,
     });
   });
   tableColumns.value = model
@@ -104,9 +134,9 @@ const init = async () => {
     )
     .concat([
       { name: "XFJD48", caption: "(4.8)", required: true },
-      { name: "JDF48", caption: "(4.8)", required: true },
+      // { name: "JDF48", caption: "(4.8)", required: true },
       { name: "XFJD40", caption: "(4.0)", required: true },
-      { name: "JDF40", caption: "(4.0)", required: true },
+      // { name: "JDF40", caption: "(4.0)", required: true },
     ])
     .map((t: any) => ({
       name: t.name,

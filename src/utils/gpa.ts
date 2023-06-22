@@ -6,33 +6,40 @@ const gradeMap = new Map([
   ["中", 75],
   ["及格", 65],
 ]);
-const lev48: {
+
+type Grade48 = {
   score: number;
   point: number;
   grade: string;
-}[] = [
-  { score: 96, point: 4.8, grade: "A+" },
-  { score: 93, point: 4.5, grade: "A" },
-  { score: 90, point: 4.0, grade: "A-" },
-  { score: 86, point: 3.8, grade: "B+" },
-  { score: 83, point: 3.5, grade: "B" },
-  { score: 80, point: 3.0, grade: "B-" },
-  { score: 76, point: 2.8, grade: "C+" },
-  { score: 73, point: 2.5, grade: "C" },
-  { score: 70, point: 2.0, grade: "C-" },
-  { score: 66, point: 1.8, grade: "D+" },
-  { score: 63, point: 1.5, grade: "D" },
-  { score: 60, point: 1.0, grade: "D-" },
-  { score: 0, point: 0.0, grade: "F" },
+  color: string;
+};
+
+const lev48: Grade48[] = [
+  { score: 96, point: 4.8, grade: "A+", color: "purple" },
+  { score: 93, point: 4.5, grade: "A" , color: "deep-purple"},
+  { score: 90, point: 4.0, grade: "A-", color: "indigo" },
+  { score: 86, point: 3.8, grade: "B+", color: "blue" },
+  { score: 83, point: 3.5, grade: "B" , color: "light-blue"},
+  { score: 80, point: 3.0, grade: "B-", color: "cyan" },
+  { score: 76, point: 2.8, grade: "C+", color: "teal" },
+  { score: 73, point: 2.5, grade: "C" , color: "green"},
+  { score: 70, point: 2.0, grade: "C-", color: "light-green" },
+  { score: 66, point: 1.8, grade: "D+", color: "orange" },
+  { score: 63, point: 1.5, grade: "D" , color: "amber"},
+  { score: 60, point: 1.0, grade: "D-", color: "yellow" },
+  { score: 0, point: 0.0, grade: "F" , color: "grey"},
 ];
-const lev40: {
+
+type Grade40 = {
   score: number;
   point: number;
-}[] = [
-  { score: 85, point: 4.0 },
-  { score: 75, point: 3.0 },
-  { score: 60, point: 2.0 },
-  { score: 0, point: 0.0 },
+  color: string;
+};
+const lev40: Grade40[] = [
+  { score: 85, point: 4.0, color: "negative" },
+  { score: 75, point: 3.0, color: "warning" },
+  { score: 60, point: 2.0, color: "positive" },
+  { score: 0, point: 0.0, color: "dark" },
 ];
 
 export function round2(x: number) {
@@ -45,18 +52,26 @@ export function round4(x: number) {
   return Math.round(x * 10000) / 10000;
 }
 
-export function calcGP48(val: number): number {
+export function findGrade48(val: number) {
   for (const x of lev48) {
-    if (val >= x.score) return x.point;
+    if (val >= x.score) return x;
   }
-  return NaN;
+  return lev48[0];
+}
+
+export function findGrade40(val: number) {
+  for (const x of lev40) {
+    if (val >= x.score) return x;
+  }
+  return lev40[0];
+}
+
+export function calcGP48(val: number): number {
+  return findGrade48(val).point;
 }
 
 export function calcGP40(val: number): number {
-  for (const x of lev40) {
-    if (val >= x.score) return x.point;
-  }
-  return NaN;
+  return findGrade40(val).point;
 }
 
 export function calcGPA(data: { XF: number; ZCJ: number }[]) {
