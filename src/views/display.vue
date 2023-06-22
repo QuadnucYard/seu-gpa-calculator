@@ -199,9 +199,7 @@ const init = async () => {
     )
     .map((t: any) => t.name);
   console.log(tableRows.value, tableColumns.value, visibleColumns.value);
-  selected.value = tableRows.value.filter(
-    t => t.CXCKDM_DISPLAY == "首修" && (t.KCXZDM_DISPLAY == "必修" || t.KCXZDM_DISPLAY == "限选")
-  );
+  selected.value = tableRows.value.filter(t => t.CXCKDM_DISPLAY == "首修");
   loading.value = false;
 
   console.log($store.state.user);
@@ -217,7 +215,15 @@ const handleLogout = async () => {
 };
 
 let storedSelectedRow: any;
-function handleSelection({ rows, added, evt }: { rows: readonly any[]; added: boolean; evt: Event;}) {
+function handleSelection({
+  rows,
+  added,
+  evt,
+}: {
+  rows: readonly any[];
+  added: boolean;
+  evt: Event;
+}) {
   // ignore selection change from header of not from a direct click event
   if (rows.length !== 1 || evt === void 0) {
     return;
