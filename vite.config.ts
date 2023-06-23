@@ -3,11 +3,9 @@ import path from "path";
 import { quasar, transformAssetUrls } from "@quasar/vite-plugin";
 import vue from "@vitejs/plugin-vue";
 import AutoImport from "unplugin-auto-import/vite";
-import IconsResolver from "unplugin-icons/resolver";
-import Icons from "unplugin-icons/vite";
 import { QuasarResolver } from "unplugin-vue-components/resolvers";
 import Components from "unplugin-vue-components/vite";
-import { defineConfig, loadEnv, ConfigEnv } from "vite";
+import { ConfigEnv, defineConfig, loadEnv } from "vite";
 import viteCompression from "vite-plugin-compression";
 
 const pathSrc = path.resolve(__dirname, "src");
@@ -38,19 +36,17 @@ export default ({ mode }: ConfigEnv) =>
       AutoImport({
         // Auto import functions from Vue, e.g. ref, reactive, toRef...
         // 自动导入 Vue 相关函数，如：ref, reactive, toRef 等
-        imports: ["vue", "vue-router", "vuex", "quasar"],
+        imports: ["vue", "vue-router", "pinia", "quasar"],
 
         // Auto import functions from Element Plus, e.g. ElMessage, ElMessageBox... (with style)
         // 自动导入 Element Plus 相关函数，如：ElMessage, ElMessageBox... (带样式)
         resolvers: [
-          QuasarResolver(),
-
           // Auto import icon components
           // 自动导入图标组件
           // IconsResolver({ prefix: "Icon" }),
         ],
 
-        dts: path.resolve(pathSrc, "auto-imports.d.ts"),
+        dts: "src/auto-imports.d.ts",
       }),
 
       Components({
@@ -58,11 +54,11 @@ export default ({ mode }: ConfigEnv) =>
         extensions: ["vue", "md"],
         // allow auto import and register components used in markdown
         include: [/\.vue$/, /\.vue\?vue/, /\.md$/],
-        resolvers: [IconsResolver({ enabledCollections: ["ep"] })],
+        resolvers: [QuasarResolver()],
         dts: "src/components.d.ts",
       }),
 
-      Icons({ autoInstall: true }),
+      // Icons({ autoInstall: true }),
 
       //Inspect(),
     ],
@@ -85,7 +81,8 @@ export default ({ mode }: ConfigEnv) =>
           assetFileNames: "static/[ext]/[name]-[hash].[ext]",
           manualChunks(id) {
             if (id.includes("node_modules")) {
-              return id.toString().split("node_modules/")[1].split("/")[0];
+              const a = id.toString().split("node_modules/");
+              return a[a.length - 1].split("/")[0];
             }
           },
         },

@@ -30,9 +30,10 @@ import { login, visit } from "@/api/login";
 import { useQuasar } from "quasar";
 import { reactive } from "vue";
 import { encryptAES } from "@/utils/ids-encrypt";
+import { useUserStore } from "@/store/user";
 
 const $router = useRouter();
-const $store = useStore();
+const userStore = useUserStore();
 const $q = useQuasar();
 
 const form = reactive({ username: "", password: "" });
@@ -43,15 +44,16 @@ const passwordRules = [(val: string) => val?.length > 0 || "请输入密码d"];
 async function onSubmit() {
   $q.notify({ type: "info", message: "提交登录信息" });
   const { access_token, token_type, encrypt_salt } = await visit(form.username);
-  console.log("encrypt", form.password, encrypt_salt);
   const token = `${token_type} ${access_token}`;
-  $store.commit("login", { token });
+  userStore.login({ token });
+
   const userData = await login(form.username, encryptAES(form.password, encrypt_salt));
   if (!userData) {
     $q.notify({ type: "negative", message: "认证失败" });
     return;
   }
-  $store.commit("login", { token, data: userData });
+  
+  userStore.login({token,  data: userData})
   $q.notify({
     // color: "green-4",
     // textColor: "white",

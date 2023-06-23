@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw, Router } from "vue-router";
+import axios from "@/api/request";
+import { useUserStore } from "@/store/user";
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -24,6 +26,27 @@ const routes: Array<RouteRecordRaw> = [
 const router: Router = createRouter({
   history: createWebHistory(import.meta.env.VITE_BASE_URL),
   routes,
+});
+
+router.beforeEach((to, from, next) => {
+  console.log("beforeEach", to.meta.requireAuth);
+  if (to.meta.requireAuth) {
+    const userStore = useUserStore();
+    if (userStore.user) {
+      axios
+        .get("/auth")
+        .then(resp => {
+          if (resp) next();
+        })
+        .catch(err => {
+          next({ name: "login", query: { redirect: to.fullPath } });
+        });
+    } else {
+      next({ name: "login", query: { redirect: to.fullPath } });
+    }
+  } else {
+    next();
+  }
 });
 
 export default router;

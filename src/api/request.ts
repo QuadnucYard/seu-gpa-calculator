@@ -1,25 +1,22 @@
 import axios from "axios";
 import { Notify } from "quasar";
 
-import { getToken } from "@/utils/auth";
-// import Config from '@/settings'
+import { useUserStore } from "@/store/user";
 // import Cookies from "js-cookie";
 
 // 创建axios实例
 const service = axios.create({
-  // baseURL: import.meta.env.VITE_APP_BASE_API + "/api",
   baseURL: "/api",
   timeout: 30000, // 请求超时时间
   withCredentials: true,
-  // headers: { "Access-Control-Allow-Origin": "*" },
 });
 
 // request拦截器
 service.interceptors.request.use(
   config => {
-    console.log("gettoken", getToken());
-    if (getToken()) {
-      config.headers["Authorization"] = getToken(); // 让每个请求携带自定义token 请根据实际情况自行修改
+    const userStore = useUserStore();
+    if (userStore.user?.token) {
+      config.headers["Authorization"] = userStore.user.token; // 让每个请求携带自定义token
     }
     // config.headers["Content-Type"] = "application/json";
     return config;
@@ -53,7 +50,7 @@ service.interceptors.response.use(
     }
     if (code) {
       if (code === 401) {
-        const $store = useStore();
+        // const $store = useStore();
         /* $store.dispatch("logout").then(() => {
           // 用户登录界面提示
           // Cookies.set("point", 401);

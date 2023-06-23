@@ -2,8 +2,7 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import { Quasar, Notify } from "quasar";
 import router from "./router";
-import store from "./store";
-import axios from "@/api/request";
+import pinia from "./store";
 
 // Import icon libraries
 import "@quasar/extras/material-icons/material-icons.css";
@@ -14,7 +13,7 @@ import "quasar/src/css/index.sass";
 import "./styles/index.scss";
 
 const app = createApp(App);
-app.use(router).use(store);
+app.use(router).use(pinia);
 app.use(Quasar, {
   plugins: { Notify },
   config: {
@@ -25,23 +24,3 @@ app.use(Quasar, {
 });
 
 app.mount("#app");
-
-router.beforeEach((to, from, next) => {
-  console.log("beforeEach", to.meta.requireAuth);
-  if (to.meta.requireAuth) {
-    if (store.state.user) {
-      axios
-        .get("/auth")
-        .then(resp => {
-          if (resp) next();
-        })
-        .catch(err => {
-          next({ name: "login", query: { redirect: to.fullPath } });
-        });
-    } else {
-      next({ name: "login", query: { redirect: to.fullPath } });
-    }
-  } else {
-    next();
-  }
-});
