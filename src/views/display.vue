@@ -13,11 +13,11 @@
         v-model:selected="selected"
         :visible-columns="visibleColumns"
         table-style="height: 100%;"
-        class="sticky-table"
+        class="sticky-table full-height"
         ref="tableRef"
-        @selection="handleSelection"
+        @selection="selectionHandler.handle($event)"
       >
-        <template v-slot:top>
+        <template #top>
           <div>
             <div class="q-table__title">
               成绩查询
@@ -41,7 +41,17 @@
             style="min-width: 150px"
           />
         </template>
-        <template v-slot:body-cell-KCXZDM="props">
+        <template #header-cell="props">
+          <q-th :props="props">
+            {{ props.col.label }}
+            <data-filter-popup
+              :data="tableRows"
+              :opt-key="props.col.name"
+              :opt-label="props.col.label"
+            />
+          </q-th>
+        </template>
+        <template #body-cell-KCXZDM="props">
           <q-td :props="props">
             <q-badge
               :color="['blue-grey', 'primary', 'secondary', 'info'][Number(props.row.KCXZDM)]"
@@ -49,27 +59,27 @@
             />
           </q-td>
         </template>
-        <template v-slot:body-cell-XFJD48="props">
+        <template #body-cell-XFJD48="props">
           <q-td :props="props">
             <q-badge :color="props.row.JD_color48" :label="props.value" />
           </q-td>
         </template>
-        <template v-slot:body-cell-JDF48="props">
+        <template #body-cell-JDF48="props">
           <q-td :props="props">
             <q-badge :color="props.row.JD_color48" :label="props.value" />
           </q-td>
         </template>
-        <template v-slot:body-cell-XFJD40="props">
+        <template #body-cell-XFJD40="props">
           <q-td :props="props">
             <q-badge :color="props.row.JD_color40" :label="props.value" />
           </q-td>
         </template>
-        <template v-slot:body-cell-JDF40="props">
+        <template #body-cell-JDF40="props">
           <q-td :props="props">
             <q-badge :color="props.row.JD_color40" :label="props.value" />
           </q-td>
         </template>
-        <template v-slot:bottom>
+        <template #bottom>
           <div>
             <q-chip square :clickable="false">
               <q-avatar color="amber" text-color="white" style="width: 60px">已选课程</q-avatar>
@@ -109,16 +119,13 @@
 
 <script setup lang="ts">
 import { getUser, logout } from "@/api/login";
-import { query } from "@/api/query";
 import { calcGPA } from "@/utils/gpa";
-import { findGrade48, findGrade40, round3, round4 } from "@/utils/gpa";
+import { formatTableDisplay } from "@/utils/table-display";
+import { SelectionHandler } from "@/utils/table-select";
 import { QTable } from "quasar";
 
 const $router = useRouter();
-const $store = useStore();
 const $q = useQuasar();
-
-const tableRef = ref<QTable>();
 
 const loading = ref(true);
 const user = ref<any>(undefined);
@@ -126,22 +133,9 @@ const tableRows = ref<any[]>([]);
 const tableColumns = ref<any>([]);
 const selected = ref<any[]>([]);
 
-console.log("init load");
-
 const visibleColumns = ref<string[]>([]);
-const exclusion = ["TSYYDM", "JDF", "SFPJ"];
 
-const pagination = ref({
-  sortBy: "XNXQDM",
-  descending: false,
-  page: 1,
-  rowsPerPage: 100,
-  // rowsNumber: xx if getting data from a server
-});
-
-const init = async () => {
-  console.log("mounted");
-
+onMounted(async () => {
   user.value = await getUser();
   if (!user.value) {
     $q.notify({ type: "warning", message: "当前未登录！" });
@@ -149,62 +143,14 @@ const init = async () => {
     return;
   }
 
-  const { model, data } = await query();
-  console.log(model, data);
-  tableRows.value = data.map((r: any) => {
-    const ZCJ = Number(r.ZCJ);
-    const gp48 = findGrade48(ZCJ);
-    const gp40 = findGrade40(ZCJ);
-    return Object.assign(r, {
-      ZCJ,
-      XFJD48: gp48.point,
-      JDF48: round3(gp48.point * r.XF),
-      XFJD40: gp40.point,
-      JDF40: gp40.point * r.XF,
-      JD_color48: gp48.color,
-      JD_color40: gp40.color,
-    });
-  });
-  tableColumns.value = model
-    .filter(
-      (t: any) =>
-        !t["form.hidden"] &&
-        t.caption &&
-        t.caption.length < 7 &&
-        !t.name.startsWith("BY") &&
-        !exclusion.includes(t.name)
-    )
-    .concat([
-      { name: "XFJD48", caption: "(4.8)", required: true },
-      { name: "JDF48", caption: "(4.8)*", required: false },
-      { name: "XFJD40", caption: "(4.0)", required: true },
-      { name: "JDF40", caption: "(4.0)*", required: false },
-    ])
-    .map((t: any) => ({
-      name: t.name,
-      label: t.caption,
-      field: t.name.endsWith("DM") ? t.name + "_DISPLAY" : t.name,
-      align: "center",
-      sortable: true,
-      required: t.required ?? false,
-    }));
-  visibleColumns.value = model
-    .filter(
-      (t: any) =>
-        !t.hidden &&
-        t.caption != "替代课程" &&
-        t.caption != "替代课程号" &&
-        t.name != "JDF48" &&
-        t.name != "JDF40"
-    )
-    .map((t: any) => t.name);
-  console.log(tableRows.value, tableColumns.value, visibleColumns.value);
-  selected.value = tableRows.value.filter(t => t.CXCKDM_DISPLAY == "首修");
-  loading.value = false;
+  const table = await formatTableDisplay();
+  tableRows.value = table.rows;
+  tableColumns.value = table.cols;
+  visibleColumns.value = table.visibleCols;
+  selected.value = table.selected;
 
-  console.log($store.state.user);
-};
-onMounted(init);
+  loading.value = false;
+});
 
 const gpa = computed(() => calcGPA(selected.value));
 
@@ -214,63 +160,15 @@ const handleLogout = async () => {
   $router.push({ name: "index" });
 };
 
-let storedSelectedRow: any;
-function handleSelection({
-  rows,
-  added,
-  evt,
-}: {
-  rows: readonly any[];
-  added: boolean;
-  evt: Event;
-}) {
-  // ignore selection change from header of not from a direct click event
-  if (rows.length !== 1 || evt === void 0) {
-    return;
-  }
-
-  const oldSelectedRow = storedSelectedRow;
-  const [newSelectedRow] = rows;
-  const { ctrlKey, shiftKey } = evt;
-
-  if (shiftKey !== true) {
-    storedSelectedRow = newSelectedRow;
-  }
-
-  // wait for the default selection to be performed
-  nextTick(() => {
-    if (shiftKey === true) {
-      const tableRows = tableRef.value!.filteredSortedRows;
-      let firstIndex = tableRows.indexOf(oldSelectedRow);
-      let lastIndex = tableRows.indexOf(newSelectedRow);
-
-      if (firstIndex < 0) {
-        firstIndex = 0;
-      }
-
-      if (firstIndex > lastIndex) {
-        [firstIndex, lastIndex] = [lastIndex, firstIndex];
-      }
-
-      const rangeRows = tableRows.slice(firstIndex, lastIndex + 1);
-      // we need the original row object so we can match them against the rows in range
-      const selectedRows = selected.value.map(toRaw);
-
-      selected.value =
-        added === true
-          ? selectedRows.concat(rangeRows.filter(row => selectedRows.includes(row) === false))
-          : selectedRows.filter(row => rangeRows.includes(row) === false);
-    } else if (ctrlKey !== true && added === true) {
-      selected.value = [newSelectedRow];
-    }
-  });
-}
+const selectionHandler = new SelectionHandler(ref<QTable>(), selected);
 </script>
 
 <style scoped lang="scss">
-.sticky-table {
+.full-height {
   max-height: calc(100vh - 40px);
+}
 
+.sticky-table {
   tr th {
     position: sticky;
     /* higher than z-index for td below */
@@ -289,10 +187,10 @@ function handleSelection({
     top: 0;
     z-index: 1;
   }
-  tr:first-child th:first-child
-    /* highest z-index */ {
-    z-index: 3;
-  }
+  // tr:first-child th:first-child {
+  //   /* highest z-index */
+  //   z-index: 3;
+  // }
 
   td:first-child {
     z-index: 1;
