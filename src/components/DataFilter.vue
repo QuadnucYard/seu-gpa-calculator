@@ -6,8 +6,9 @@
       size="sm"
       align="left"
       :label="filterOffLabel"
+      :disable="false"
       class="q-my-xs overflow-hidden"
-      @click="$emit('reset')"
+      @click="onReset"
     />
     <q-input outlined v-model="searchText" placeholder="搜索" dense class="my-text-xs" />
     <div class="border-box q-my-xs col-8">
@@ -32,33 +33,43 @@
 
     <div class="col flex">
       <q-space />
-      <q-btn dense size="sm" label="确定" class="bottom-button" @click="$emit('confirm')" />
+      <q-btn dense size="sm" label="确定" class="bottom-button" @click="onConfirm" />
       <q-btn dense size="sm" label="取消" class="bottom-button" @click="$emit('cancel')" />
     </div>
   </div>
 </template>
 
-<script setup lang="ts" generic="T, TKey extends keyof T">
+<script setup lang="ts" generic="T, TKey extends keyof T, TField extends keyof T">
 import _ from "lodash-es";
 
 type TVal = T[TKey];
 
-const props = defineProps<{ data: T[]; optKey: TKey; optLabel?: string }>();
-
-const selection = ref<TVal[]>([]) as Ref<TVal[]>;
-const selectAll = ref<boolean | null>(false);
+const props = defineProps<{ data: T[]; label?: string; name: TKey; field?: TField }>();
 
 const searchText = ref("");
 
-const filterOffLabel = computed(() => `从"${ props.optLabel ?? unref(props.optKey).toString()}"中清除筛选`);
+const hasFilter = ref(false);
+
+const filterOffLabel = computed(
+  () => `从"${props.label ?? unref(props.name).toString()}"中清除筛选`
+);
+
+// 有个不足：应当不受自身筛选的影响
 
 const options = computed(() =>
-  _.uniqBy(props.data, props.optKey).map(t => ({
-    value: t[props.optKey],
-    label: String(t[props.optKey]),
-  }))
+  _.chain(props.data)
+    .filter(t => searchText.value.length == 0 || String(t[props.name]).includes(searchText.value))
+    .uniqBy(props.name)
+    .map(t => ({
+      value: t[props.name],
+      label: String(t[props.field ?? props.name]),
+    }))
+    .sortBy("value")
+    .value()
 );
-console.log(options.value);
+
+const selection = ref<TVal[]>(_.map(options.value, "value")) as Ref<TVal[]>;
+const selectAll = ref<boolean | null>(true);
 
 // 这里有个问题  不能随便v-model
 // 需要注意，确认一次选择后会更新 filteredRows，从而导致更新 props，
@@ -78,11 +89,21 @@ const handleSelect = () => {
   else selectAll.value = null;
 };
 
-defineEmits<{
+const emit = defineEmits<{
   confirm: [TVal[]];
   cancel: [];
   reset: [];
 }>();
+
+const onReset = () => {
+  searchText.value = "";
+  hasFilter.value = false;
+  emit("reset");
+};
+const onConfirm = () => {
+  hasFilter.value = true;
+  emit("confirm", selection.value);
+};
 </script>
 
 <style scoped lang="scss">

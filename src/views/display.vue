@@ -15,6 +15,8 @@
         table-style="height: 100%;"
         class="sticky-table full-height"
         ref="tableRef"
+        :filter="filters"
+        :filter-method="filterFn"
         @selection="selectionHandler.handle($event)"
       >
         <template #top>
@@ -43,11 +45,16 @@
         </template>
         <template #header-cell="props">
           <q-th :props="props">
-            {{ props.col.label }}
+            <span :style="props.col.name in filters ? 'color: blue' : ''">{{
+              props.col.label
+            }}</span>
             <data-filter-popup
-              :data="tableRows"
-              :opt-key="props.col.name"
-              :opt-label="props.col.label"
+              :data="tableRef?.filteredSortedRows"
+              :name="props.col.name"
+              :field="props.col.field"
+              :label="props.col.label"
+              @set="onFilterSet(props.col.name, $event)"
+              @reset="onFilterReset(props.col.name)"
             />
           </q-th>
         </template>
@@ -87,25 +94,25 @@
             </q-chip>
             <q-chip square :clickable="false">
               <q-avatar color="red" text-color="white" style="width: 60px">总学分</q-avatar>
-              {{ gpa.sumCredit }}
+              {{ gpa.sumCredit.toFixed(2) }}
             </q-chip>
             <q-chip square :clickable="false">
               <q-avatar color="pink" text-color="white" style="width: 60px">平均分</q-avatar>
-              {{ gpa.avgScore }}
+              {{ gpa.avgScore.toFixed(2) }}
             </q-chip>
             <q-chip square :clickable="false">
               <q-avatar color="orange" text-color="white" style="width: 70px">GPA(4.8)</q-avatar>
-              {{ gpa.GPA48 }}
+              {{ gpa.GPA48.toFixed(4) }}
             </q-chip>
             <q-chip square :clickable="false">
-              <q-avatar color="deep-orange" text-color="white" style="width: 70px"
-                >GPA(4.0)</q-avatar
-              >
-              {{ gpa.GPA40 }}
+              <q-avatar color="deep-orange" text-color="white" style="width: 70px">
+                GPA(4.0)
+              </q-avatar>
+              {{ gpa.GPA40.toFixed(4) }}
             </q-chip>
           </div>
           <div>
-            <div class="text-grey">Tip: 可手动选择参与计算的课程！</div>
+            <div class="text-grey">Tip: 可手动选择参与计算的课程！右键表头打开筛选</div>
             <div class="text-grey">
               Use <kbd>SHIFT</kbd> to select / deselect a range and <kbd>CTRL</kbd> to add to
               selection
@@ -123,9 +130,12 @@ import { calcGPA } from "@/utils/gpa";
 import { formatTableDisplay } from "@/utils/table-display";
 import { SelectionHandler } from "@/utils/table-select";
 import { QTable } from "quasar";
+import _ from "lodash-es";
 
 const $router = useRouter();
 const $q = useQuasar();
+
+const tableRef = ref<QTable>();
 
 const loading = ref(true);
 const user = ref<any>(undefined);
@@ -134,6 +144,8 @@ const tableColumns = ref<any>([]);
 const selected = ref<any[]>([]);
 
 const visibleColumns = ref<string[]>([]);
+
+const filters = reactive<{ [key: string]: any[] }>({});
 
 onMounted(async () => {
   user.value = await getUser();
@@ -160,7 +172,29 @@ const handleLogout = async () => {
   $router.push({ name: "index" });
 };
 
-const selectionHandler = new SelectionHandler(ref<QTable>(), selected);
+const selectionHandler = new SelectionHandler(tableRef, selected);
+
+const onFilterSet = (key: string, selection: any[]) => {
+  // if (selection.length < _.find(tableColumns.value, t => t.name === key).length)
+  filters[key] = selection;
+};
+const onFilterReset = (key: string) => {
+  delete filters[key];
+};
+watch(filters, () => {
+  selected.value = selected.value.filter(t => tableRef.value?.filteredSortedRows.includes(t));
+});
+
+const filterFn = (
+  rows: readonly any[],
+  terms: { [key: string]: any[] },
+  cols: readonly any[],
+  getCellValue: (col: any, row: any) => any
+) => {
+  // 参数就是传给table的行列和filter
+  return rows.filter(r => cols.every(c => terms[c.name]?.includes(r[c.name]) ?? true));
+  // 检验这行值的每一项如果在terms里那么就得在约束里
+};
 </script>
 
 <style scoped lang="scss">

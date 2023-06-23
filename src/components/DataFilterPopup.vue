@@ -2,8 +2,9 @@
   <q-popup-proxy context-menu :breakpoint="400" ref="popupRef" class="popup">
     <data-filter
       :data="data"
-      :opt-key="optKey"
-      :opt-label="optLabel"
+      :name="name"
+      :field="field"
+      :label="label"
       @confirm="handleConfirm"
       @cancel="handleCancel"
       @reset="handleReset"
@@ -11,23 +12,23 @@
   </q-popup-proxy>
 </template>
 
-<script setup lang="ts" generic="T, TKey extends keyof T">
+<script setup lang="ts" generic="T, TKey extends keyof T, TField extends keyof T">
 import { QPopupProxy } from "quasar";
 
 type TVal = T[TKey];
 
-const props = defineProps<{ data: T[]; optKey: TKey; optLabel?: string }>();
+const props = defineProps<{ data: T[]; label?: string; name: TKey; field?: TField }>();
 
 const popupRef = ref<QPopupProxy>();
 
 const emit = defineEmits<{
-  confirm: [TVal[]];
+  set: [TVal[]];
   reset: [];
 }>();
 
 const handleConfirm = (selected: TVal[]) => {
   popupRef.value?.hide();
-  emit("confirm", selected);
+  emit("set", selected);
 };
 const handleCancel = () => {
   popupRef.value?.hide();

@@ -5,7 +5,6 @@ const exclusion = ["TSYYDM", "JDF", "SFPJ"];
 
 export async function formatTableDisplay() {
   const { model, data } = await query();
-  console.log(model, data);
   const rows = data.map((r: any) => {
     const ZCJ = Number(r.ZCJ);
     const gp48 = findGrade48(ZCJ);
@@ -36,9 +35,9 @@ export async function formatTableDisplay() {
       { name: "JDF40", caption: "(4.0)*", required: false },
     ])
     .map((t: any) => ({
-      name: t.name,
-      label: t.caption,
-      field: t.name.endsWith("DM") ? t.name + "_DISPLAY" : t.name,
+      name: t.name, // 用于索引
+      label: t.caption, // 用于显示内容
+      field: t.name.endsWith("DM") ? t.name + "_DISPLAY" : t.name, // 用于显示标题
       align: "center",
       sortable: true,
       required: t.required ?? false,
