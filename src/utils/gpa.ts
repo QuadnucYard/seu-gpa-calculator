@@ -86,6 +86,6 @@ export function calcGPA(data: { XF: number; ZCJ: number }[]) {
   const sumGP40 = round3(_.sumBy(reduced, "gp40"));
   const GPA48 = round4(_.sumBy(reduced, t => t.credit * t.gp48) / sumCredit);
   const GPA40 = round4(_.sumBy(reduced, t => t.credit * t.gp40) / sumCredit);
-  const avgScore = round2(_.sumBy(reduced, "score") / reduced.length);
+  const avgScore = round2(_.sumBy(reduced, t => t.credit * t.score) / reduced.length);
   return { sumCredit, sumGP48, GPA48, sumGP40, GPA40, avgScore, total: reduced.length };
 }
